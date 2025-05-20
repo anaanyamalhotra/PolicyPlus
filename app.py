@@ -1,4 +1,4 @@
-# Content omitted fo# app.py
+# app.py
 
 import streamlit as st
 import pandas as pd
@@ -17,9 +17,7 @@ st.set_page_config(page_title="PolicyPulse | AI Impact Tracker", layout="centere
 @st.cache_data
 def load_data():
     df = pd.read_csv("chr_multi_year.csv", dtype={"FIPS": str})
-    print(df.columns)  # This will print column names to your terminal or logs
-    if "Level" in df.columns:
-        df = df[df["Level"] == "State"]
+    #df = df[df["Level"] == "State"]
     return df
 
 # Train ML model
@@ -37,6 +35,8 @@ def main():
 
     features = ["UnemploymentRate", "UninsuredAdults", "AccessToCareIndex"]
     target = "PreventableHospitalStays"
+
+    df = df.dropna(subset=["UnemploymentRate", "UninsuredAdults", "AccessToCareIndex", "PreventableHospitalStays"])
 
     if not all(col in df.columns for col in features + [target]):
         st.error("One or more required columns are missing in the dataset.")
@@ -95,3 +95,4 @@ if __name__ == "__main__":
     except Exception as e:
         st.error("Something went wrong.")
         st.text(traceback.format_exc())
+
