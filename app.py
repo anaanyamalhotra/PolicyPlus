@@ -106,6 +106,7 @@ def main():
                   title=f"Preventable Hospital Stays in {selected_year}")
     st.plotly_chart(fig3)
 
+    # US state name → abbreviation mapping
     state_abbrev = {
         'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR',
         'California': 'CA', 'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE',
@@ -154,7 +155,6 @@ def main():
         except Exception as e:
             st.error("Something went wrong with your upload.")
             st.text(str(e))
-
     # GPT-style explanation
     st.subheader("🧠 Explain the Prediction (Experimental)")
     explanation_prompt = f"""
@@ -162,7 +162,49 @@ def main():
     explain in simple language why the predicted preventable hospital stays might be {int(predicted_value)}.
     """
     st.code(explanation_prompt, language="markdown")
-    st.info("You can paste this into a language model (e.g., ChatGPT) to generate a natural language explanation.")
+    st.markdown("**Simulated GPT Response:**")
+    st.success("Based on high uninsured rates and limited access to care, the model predicts elevated hospitalizations due to delayed preventive treatment.")
+
+    # Scenario Comparison Dashboard
+    st.subheader("🆚 Compare Two Policy Scenarios")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**Scenario A**")
+        ua = st.slider("Unemployment Rate (A)", 0.0, 15.0, 5.0, key="ua")
+        ui = st.slider("Uninsured Adults (%) (A)", 0.0, 25.0, 10.0, key="ui")
+        ac = st.slider("Access to Care Index (A)", 0.0, 10.0, 5.0, key="ac")
+        input_scaled_a = scaler.transform(np.array([[ua, ui, ac]]))
+        pred_a = np.expm1(model.predict(input_scaled_a)[0])
+
+    with col2:
+        st.markdown("**Scenario B**")
+        ub = st.slider("Unemployment Rate (B)", 0.0, 15.0, 7.0, key="ub")
+        uj = st.slider("Uninsured Adults (%) (B)", 0.0, 25.0, 14.0, key="uj")
+        ad = st.slider("Access to Care Index (B)", 0.0, 10.0, 4.0, key="ad")
+        input_scaled_b = scaler.transform(np.array([[ub, uj, ad]]))
+        pred_b = np.expm1(model.predict(input_scaled_b)[0])
+
+    st.write("📊 **Predicted Preventable Hospital Stays**")
+    st.bar_chart(pd.DataFrame({
+        "Scenario": ["A", "B"],
+        "Prediction": [pred_a, pred_b]
+    }).set_index("Scenario"))
+
+    # Animated Choropleth
+    st.subheader("🎞 Animated US Trends Over Time")
+    df_map = df.copy()
+    df_map["StateCode"] = df_map["State"].map(state_abbrev)
+    fig5 = px.choropleth(
+        df_map,
+        locations="StateCode",
+        locationmode="USA-states",
+        color="PreventableHospitalStays",
+        animation_frame="Year",
+        color_continuous_scale="YlOrRd",
+        scope="usa",
+        title="Preventable Hospital Stays by State Over Time"
+    )
+    st.plotly_chart(fig5)
 
     # Feedback form
     st.subheader("💬 Feedback")
@@ -171,6 +213,18 @@ def main():
         submitted = st.form_submit_button("Submit")
         if submitted:
             st.success("✅ Thank you for your feedback!")
+
+    # Feedback log
+    st.subheader("📝 Save Feedback (Simulated)")
+    if "feedback_log" not in st.session_state:
+        st.session_state.feedback_log = []
+    if submitted and feedback_text:
+        st.session_state.feedback_log.append(feedback_text)
+
+    if st.session_state.feedback_log:
+        with st.expander("📂 View Submitted Feedback Log"):
+            for i, fb in enumerate(st.session_state.feedback_log):
+                st.markdown(f"**{i+1}.** {fb}")
 
 if __name__ == "__main__":
     try:
