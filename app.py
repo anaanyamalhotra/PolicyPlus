@@ -19,7 +19,7 @@ def load_data():
     df = pd.read_csv("chr_multi_year.csv", dtype={"FIPS": str})
     df = df[df["Level"] == "State"]
     return df
-
+print(df.columns)
 # Train ML model
 def train_model(X, y):
     model = RandomForestRegressor(n_estimators=100, random_state=42)
